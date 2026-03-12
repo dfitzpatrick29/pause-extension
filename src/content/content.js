@@ -38,11 +38,25 @@
     await chrome.storage.local.set({ [STORAGE.log]: entries });
   }
 
-  let timeoutId = null;
+  let intervalId = null;
+  let timerEndTime = 0;
   let overlayEl = null;
+  let countdownEl = null;
   let timerMinutes = 15;
   let isSiteBlocked = false;
   let currentTheme = 'blue';
+
+  const TIMER_END_KEY = () => `pause_timer_end_${hostname}`;
+
+  function saveTimerEnd(ts) {
+    timerEndTime = ts;
+    sessionStorage.setItem(TIMER_END_KEY(), String(ts));
+  }
+
+  function loadTimerEnd() {
+    const v = Number(sessionStorage.getItem(TIMER_END_KEY()));
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  }
 
   function getThemeVars(theme) {
     const t = {
@@ -65,7 +79,7 @@
         text: '#f4f4f4', muted: '#a8a8a8', sub: '#d6d6d6',
         inputBg: '#161616', btnBg: '#1e1e1e', btnText: '#ffffff',
         btnBorder: '#555555', btnHover: '#292929',
-        font: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+        font: '"Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif',
       },
     };
     return t[theme] || t.black;
@@ -96,19 +110,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
+        padding: 2rem;
       }
       #__pause_overlay__ .pause-card {
-        max-width: 560px;
+        max-width: 616px;
         width: 100%;
         border: 1px solid ${v.border};
         background: ${v.card};
-        border-radius: 8px;
-        padding: 2rem;
+        border-radius: 9px;
+        padding: 2.4rem;
       }
       #__pause_overlay__ h2 {
         margin: 0 0 0.5rem;
-        font-size: 0.8rem;
+        font-size: 0.88rem;
         letter-spacing: 0.25em;
         text-transform: uppercase;
         color: ${v.muted};
@@ -119,11 +133,11 @@
         width: 2rem;
         height: 1px;
         background: ${v.border};
-        margin: 0.75rem 0 1.5rem;
+        margin: 0.75rem 0 1.6rem;
       }
       #__pause_overlay__ .pause-question {
         margin: 0 0 0.5rem;
-        font-size: 1.25rem;
+        font-size: 1.375rem;
         font-style: italic;
         font-weight: 400;
         color: ${v.text};
@@ -131,39 +145,38 @@
       }
       #__pause_overlay__ .pause-site {
         font-family: ${uiFont};
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         color: ${v.sub};
-        margin: 0 0 1.5rem;
+        margin: 0 0 1.6rem;
       }
       #__pause_overlay__ .pause-last-label {
-        margin: 0;
-        font-size: 0.75rem;
+        margin: 0 0 0.35rem;
+        font-size: 0.82rem;
         font-family: ${uiFont};
         color: ${v.muted};
-        margin-bottom: 0.3rem;
       }
       #__pause_overlay__ .pause-last-message {
-        margin: 0 0 1.5rem;
-        font-size: 0.95rem;
-        line-height: 1.5;
+        margin: 0 0 1.6rem;
+        font-size: 1.05rem;
+        line-height: 1.55;
         color: ${v.text};
         white-space: pre-wrap;
       }
       #__pause_overlay__ .pause-help {
-        margin: 0 0 0.5rem;
-        font-size: 0.82rem;
+        margin: 0 0 0.55rem;
+        font-size: 0.9rem;
         font-family: ${uiFont};
         color: ${v.sub};
       }
       #__pause_overlay__ .pause-input {
         width: 100%;
-        min-height: 90px;
+        min-height: 100px;
         background: ${v.inputBg};
         border: 1px solid ${v.border};
         color: ${v.text};
         border-radius: 3px;
-        padding: 0.85rem 1rem;
-        font-size: 1rem;
+        padding: 0.95rem 1.1rem;
+        font-size: 1.1rem;
         font-family: ${v.font};
         margin: 0 0 0.25rem;
         resize: vertical;
@@ -172,25 +185,25 @@
       }
       #__pause_overlay__ .pause-counter {
         font-family: ${uiFont};
-        font-size: 0.72rem;
+        font-size: 0.79rem;
         color: ${v.muted};
         text-align: right;
-        margin: 0 0 1rem;
+        margin: 0 0 1.1rem;
       }
       #__pause_overlay__ .pause-buttons {
         display: flex;
         gap: 0.75rem;
         flex-wrap: wrap;
-        margin-top: 1.5rem;
+        margin-top: 1.6rem;
       }
       #__pause_overlay__ button {
         border: 1px solid ${v.btnBorder};
         background: ${v.btnBg};
         color: ${v.btnText};
-        padding: 0.65rem 1.8rem;
+        padding: 0.72rem 2rem;
         border-radius: 3px;
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.94rem;
         font-family: ${uiFont};
         letter-spacing: 0.06em;
         transition: opacity 200ms ease;
@@ -209,17 +222,68 @@
     document.documentElement.appendChild(style);
   }
 
-  function clearTimer() {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
+  function destroyCountdown() {
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    document.getElementById('__pause_countdown__')?.remove();
+    document.getElementById('__pause_countdown_style__')?.remove();
+    countdownEl = null;
+  }
+
+  function buildCountdownStyle(v) {
+    document.getElementById('__pause_countdown_style__')?.remove();
+    const style = document.createElement('style');
+    style.id = '__pause_countdown_style__';
+    style.textContent = `
+      #__pause_countdown__ {
+        position: fixed;
+        bottom: 1.1rem;
+        right: 1.1rem;
+        z-index: 2147483646;
+        background: ${v.card};
+        color: ${v.muted};
+        border: 1px solid ${v.border};
+        border-radius: 3px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        padding: 0.3rem 0.65rem;
+        opacity: 0.9;
+        pointer-events: none;
+        user-select: none;
+      }
+    `;
+    document.documentElement.appendChild(style);
+  }
+
+  function updateCountdownDisplay() {
+    if (!countdownEl) return;
+    const remaining = Math.max(0, timerEndTime - Date.now());
+    const totalSec = Math.ceil(remaining / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    countdownEl.textContent = `⏸ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  function tickInterval() {
+    const remaining = timerEndTime - Date.now();
+    updateCountdownDisplay();
+    if (remaining <= 0) {
+      destroyCountdown();
+      showCheckInOverlay();
     }
   }
 
   function scheduleCheckIn() {
-    clearTimer();
+    destroyCountdown();
     if (!isSiteBlocked) return;
-    timeoutId = window.setTimeout(showCheckInOverlay, timerMinutes * 60_000);
+    saveTimerEnd(Date.now() + timerMinutes * 60_000);
+    const v = getThemeVars(currentTheme);
+    buildCountdownStyle(v);
+    countdownEl = document.createElement('div');
+    countdownEl.id = '__pause_countdown__';
+    document.documentElement.appendChild(countdownEl);
+    updateCountdownDisplay();
+    intervalId = setInterval(tickInterval, 1000);
   }
 
   async function showEntryOverlay() {
@@ -322,12 +386,12 @@
     isSiteBlocked = isBlockedHost(hostname, blocked);
 
     if (!isSiteBlocked) {
-      clearTimer();
+      destroyCountdown();
       destroyOverlay();
       return;
     }
 
-    clearTimer();
+    destroyCountdown();
     showEntryOverlay();
   }
 
@@ -335,6 +399,9 @@
     if (areaName !== 'sync') return;
     if (changes.pause_theme) {
       currentTheme = changes.pause_theme.newValue || 'blue';
+      if (countdownEl) {
+        buildCountdownStyle(getThemeVars(currentTheme));
+      }
     }
     if (changes[STORAGE.blocked] || changes[STORAGE.timer]) {
       init();
