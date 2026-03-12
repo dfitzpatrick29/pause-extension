@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pause</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<div id="stage">
+  <div class="toolbar">
+    <div class="theme-wrap">
+      <button class="btn btn-ghost btn-sm" id="btn-theme" type="button">Theme ▾</button>
+      <select id="theme-select" class="theme-select hidden" aria-label="Choose theme">
+        <option value="blue">Blue</option>
+        <option value="cream">Cream</option>
+        <option value="black">Black</option>
+      </select>
+    </div>
+  </div>
+
+  <img class="brand-icon" src="../../PauseIcon.png" alt="Pause icon" />
+  <p class="wordmark">Pause</p>
+  <div class="divider"></div>
+
+  <div class="tab-row">
+    <button class="btn btn-ghost btn-sm tab-btn active" id="tab-blocked" type="button">Blocked Sites</button>
+    <button class="btn btn-ghost btn-sm tab-btn" id="tab-journal" type="button">Journal</button>
+    <button class="btn btn-ghost btn-sm tab-btn" id="tab-timer" type="button">Timer</button>
+  </div>
+
+  <!-- ── View 1: Blocked Sites Manager (default) ────────────── -->
+  <div id="view-blocked" class="view active">
+    <p class="panel-title">Blocked Sites</p>
+    <div class="add-site-row">
+      <input
+        class="add-site-input"
+        id="add-site-input"
+        type="text"
+        placeholder="e.g. reddit.com"
+      />
+      <button class="btn btn-primary btn-sm" id="btn-add-site">Add</button>
+    </div>
+    <ul class="sites-list" id="sites-list"></ul>
+  </div>
+
+  <!-- ── View 2: Journal (blocked pages only) ───────────────── -->
+  <div id="view-journal" class="view">
+    <p class="headline">Why are you using</p>
+    <p class="site-name" id="current-site">this page?</p>
+
+    <p class="subtext" id="journal-note">Journal entries are only available on blocked sites.</p>
+    <textarea
+      class="reason-input"
+      id="reason-input"
+      placeholder="Write your reason here…"
+    ></textarea>
+    <p class="char-counter" id="reason-counter">0 / 50 minimum</p>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-submit" type="button">Save Entry</button>
+      <button class="btn btn-ghost" id="btn-view-log" type="button">View Past Reasons</button>
+    </div>
+
+    <div id="journal-log-wrap" class="hidden">
+      <ul class="log-list" id="log-list"></ul>
+      <div class="btn-row">
+        <button class="btn btn-danger btn-sm" id="btn-clear-log" type="button">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── View 3: Timer Settings ─────────────────────────────── -->
+  <div id="view-timer" class="view">
+    <p class="panel-title">Blocked Site Timer</p>
+    <p class="subtext">After this many minutes on a blocked site, Pause shows the black intentionality screen.</p>
+    <div class="timer-row">
+      <input class="timer-input" id="timer-minutes" type="number" min="1" max="240" step="1" />
+      <span class="timer-label">minutes</span>
+      <button class="btn btn-primary btn-sm" id="btn-save-timer" type="button">Save</button>
+    </div>
+    <p class="subtext" id="timer-status"></p>
+  </div>
+
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

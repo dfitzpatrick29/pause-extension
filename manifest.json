@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Pause",
+  "version": "1.0",
+  "description": "Break the trance. Ask yourself why before you scroll.",
+  "icons": {
+    "128": "PauseIcon.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Pause",
+    "default_icon": "PauseIcon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["src/content/content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
