@@ -193,10 +193,13 @@ async function saveJournalEntry() {
   await saveLog(entries);
 
   reasonInput.value = '';
-  journalNote.textContent = 'Saved. Keep browsing intentionally.';
-  setTimeout(() => {
-    journalNote.textContent = 'Journal entries are only available on blocked sites.';
-  }, 1500);
+  reasonCounter.textContent = '0 / 50 minimum';
+  journalNote.textContent = 'Saved.';
+  setTimeout(() => { journalNote.textContent = ''; }, 1500);
+  // Refresh log if it's already visible
+  if (!journalLogWrap.classList.contains('hidden')) {
+    await renderLog();
+  }
 }
 
 async function loadTimer() {
@@ -229,27 +232,28 @@ async function syncJournalVisibility() {
   const blocked = await loadBlockedSites();
   isCurrentSiteBlocked = isBlockedHost(currentSiteHostname, blocked);
 
-  tabs.journal.classList.toggle('hidden', !isCurrentSiteBlocked);
+  // Journal tab is always visible; only new-entry controls are gated
+  tabs.journal.classList.remove('hidden');
   currentSiteEl.textContent = `${currentSiteHostname}?`;
 
   reasonInput.disabled = !isCurrentSiteBlocked;
   btnSubmit.disabled = !isCurrentSiteBlocked;
-  btnViewLog.disabled = !isCurrentSiteBlocked;
+  // Log is always readable
+  btnViewLog.disabled = false;
 
   if (!isCurrentSiteBlocked) {
-    journalNote.textContent = 'Journal entries are only available on blocked sites.';
-    if (views.journal.classList.contains('active')) {
-      showView('blocked');
-    }
+    journalNote.textContent = 'Open a blocked site to add a new entry.';
   } else {
-    journalNote.textContent = 'Journal entries are only available on blocked sites.';
+    journalNote.textContent = '';
   }
 }
 
 tabs.blocked.addEventListener('click', () => showView('blocked'));
-tabs.journal.addEventListener('click', () => {
-  if (!isCurrentSiteBlocked) return;
+tabs.journal.addEventListener('click', async () => {
   showView('journal');
+  // Always open the log panel and refresh it
+  journalLogWrap.classList.remove('hidden');
+  await renderLog();
 });
 tabs.timer.addEventListener('click', () => showView('timer'));
 
