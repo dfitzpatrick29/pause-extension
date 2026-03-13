@@ -170,6 +170,7 @@
       }
       #__pause_overlay__ .pause-input {
         width: 100%;
+        box-sizing: border-box;
         min-height: 120px;
         background: ${v.inputBg};
         border: 1px solid ${v.border};
