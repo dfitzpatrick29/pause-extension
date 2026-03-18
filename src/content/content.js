@@ -292,10 +292,15 @@
         transition: opacity 200ms ease;
       }
       #__pause_overlay__ button:hover { opacity: 0.82; }
+      #__pause_overlay__ #pause-continue {
+        background: ${v.btnText};
+        color: ${v.btnBg};
+        border-color: ${v.btnBorder};
+      }
       #__pause_overlay__ #pause-close {
-        background: transparent;
-        color: ${v.sub};
-        border-color: ${v.border};
+        background: ${v.btnBg};
+        color: ${v.btnText};
+        border-color: ${v.btnBorder};
       }
       #__pause_overlay__ button[disabled] {
         opacity: 0.4;
