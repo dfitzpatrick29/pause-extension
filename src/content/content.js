@@ -7,6 +7,8 @@
     blocked: 'pause_blocked',
     log: 'pause_log',
     timer: 'pause_timer_minutes',
+    dailyBlocked: 'pause_daily_blocked_sites',
+    continueCount: 'pause_continue_count',
   };
 
   const DEFAULT_BLOCKED_SITES = [
@@ -17,10 +19,58 @@
   ];
 
   const hostname = window.location.hostname;
+  const pauseIconUrl = chrome.runtime.getURL('PauseIcon.png');
   if (!hostname) return;
+
+  function getTodayKey() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  async function isSiteLockedForToday(site) {
+    const data = await chrome.storage.local.get({ [STORAGE.dailyBlocked]: {} });
+    const map = data[STORAGE.dailyBlocked] || {};
+    return map[site] === getTodayKey();
+  }
+
+  async function setSiteLockedForToday(site) {
+    const data = await chrome.storage.local.get({
+      [STORAGE.dailyBlocked]: {},
+      [STORAGE.continueCount]: {},
+    });
+    const blockedMap = data[STORAGE.dailyBlocked] || {};
+    const countMap = data[STORAGE.continueCount] || {};
+    const today = getTodayKey();
+    blockedMap[site] = today;
+    countMap[site] = { date: today, count: 3 };
+    await chrome.storage.local.set({
+      [STORAGE.dailyBlocked]: blockedMap,
+      [STORAGE.continueCount]: countMap,
+    });
+  }
+
+  async function incrementContinueCountForToday(site) {
+    const data = await chrome.storage.local.get({ [STORAGE.continueCount]: {} });
+    const map = data[STORAGE.continueCount] || {};
+    const today = getTodayKey();
+    const existing = map[site];
+    const nextCount = existing && existing.date === today
+      ? Number(existing.count || 0) + 1
+      : 1;
+    map[site] = { date: today, count: nextCount };
+    await chrome.storage.local.set({ [STORAGE.continueCount]: map });
+    return nextCount;
+  }
 
   function isBlockedHost(host, blocked) {
     return blocked.some((s) => host === s || host.endsWith('.' + s));
+  }
+
+  function getBlockedKeyForHost(host, blocked) {
+    return blocked.find((s) => host === s || host.endsWith('.' + s)) || host;
   }
 
   async function getLastReasonForSite(site) {
@@ -52,6 +102,7 @@
   let timerMinutes = 15;
   let isSiteBlocked = false;
   let currentTheme = 'blue';
+  let currentBlockedKey = hostname;
 
   const TIMER_END_KEY = () => `pause_timer_end_${hostname}`;
 
@@ -126,6 +177,30 @@
         background: ${v.card};
         border-radius: 9px;
         padding: 2.4rem;
+      }
+      #__pause_overlay__ .pause-lock {
+        text-align: center;
+      }
+      #__pause_overlay__ .pause-brand-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 10px;
+        display: block;
+        margin: 0 auto 0.95rem;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+      }
+      #__pause_overlay__ .pause-lock-text {
+        margin: 0;
+        font-size: 1.18rem;
+        line-height: 1.55;
+        color: ${v.text};
+        font-family: ${v.font};
+      }
+      #__pause_overlay__ .pause-lock-subtext {
+        margin: 0.55rem 0 0;
+        font-size: 0.86rem;
+        color: ${v.sub};
+        font-family: ${uiFont};
       }
       #__pause_overlay__ h2 {
         margin: 0 0 0.5rem;
@@ -294,6 +369,24 @@
     intervalId = setInterval(tickInterval, 1000);
   }
 
+  async function showDailyBlockOverlay() {
+    destroyCountdown();
+    destroyOverlay();
+    ensureOverlayStyle();
+
+    overlayEl = document.createElement('div');
+    overlayEl.id = '__pause_overlay__';
+    overlayEl.innerHTML = `
+      <div class="pause-card pause-lock">
+        <img class="pause-brand-icon" src="${pauseIconUrl}" alt="Pause icon" />
+        <p class="pause-lock-text">${hostname} had been blocked.</p>
+        <p class="pause-lock-subtext">Come back tomorrow.</p>
+      </div>
+    `;
+
+    document.documentElement.appendChild(overlayEl);
+  }
+
   async function showEntryOverlay() {
     destroyOverlay();
     ensureOverlayStyle();
@@ -371,7 +464,13 @@
     document.documentElement.appendChild(overlayEl);
     overlayEl.querySelector('.pause-last-message').textContent = lastReason;
 
-    overlayEl.querySelector('#pause-continue').addEventListener('click', () => {
+    overlayEl.querySelector('#pause-continue').addEventListener('click', async () => {
+      const continueCount = await incrementContinueCountForToday(currentBlockedKey);
+      if (continueCount >= 3) {
+        await setSiteLockedForToday(currentBlockedKey);
+        await showDailyBlockOverlay();
+        return;
+      }
       destroyOverlay();
       scheduleCheckIn();
     });
@@ -392,10 +491,16 @@
     timerMinutes = Number(syncData[STORAGE.timer]) || 15;
     currentTheme = syncData.pause_theme || 'blue';
     isSiteBlocked = isBlockedHost(hostname, blocked);
+    currentBlockedKey = getBlockedKeyForHost(hostname, blocked);
 
     if (!isSiteBlocked) {
       destroyCountdown();
       destroyOverlay();
+      return;
+    }
+
+    if (await isSiteLockedForToday(currentBlockedKey)) {
+      await showDailyBlockOverlay();
       return;
     }
 
