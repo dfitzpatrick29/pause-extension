@@ -412,3 +412,29 @@ body {
   font-family: var(--font-ui);
   font-size: 0.88rem;
 }
+
+/* ── Instructions ── */
+#view-instructions {
+  text-align: left;
+}
+
+.instructions-lead {
+  margin-bottom: 0.7rem;
+}
+
+.instructions-list {
+  margin: 0;
+  padding-left: 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.instructions-list strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}

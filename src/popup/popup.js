@@ -18,12 +18,14 @@ const views = {
   blocked: document.getElementById('view-blocked'),
   journal: document.getElementById('view-journal'),
   timer: document.getElementById('view-timer'),
+  instructions: document.getElementById('view-instructions'),
 };
 
 const tabs = {
   blocked: document.getElementById('tab-blocked'),
   journal: document.getElementById('tab-journal'),
   timer: document.getElementById('tab-timer'),
+  instructions: document.getElementById('tab-instructions'),
 };
 
 const btnTheme = document.getElementById('btn-theme');
@@ -273,6 +275,7 @@ tabs.journal.addEventListener('click', async () => {
   await renderLog();
 });
 tabs.timer.addEventListener('click', () => showView('timer'));
+tabs.instructions.addEventListener('click', () => showView('instructions'));
 
 btnAddSite.addEventListener('click', addSite);
 addSiteInput.addEventListener('keydown', (e) => {
