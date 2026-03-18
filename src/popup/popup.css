@@ -75,8 +75,10 @@ body {
   width: 100%;
   flex: 1;
   padding: 1.5rem;
+  padding-bottom: 4rem;
   text-align: center;
   min-height: 580px;
+  position: relative;
 }
 
 /* ── View transitions ── */
@@ -437,4 +439,10 @@ body {
 .instructions-list strong {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.instructions-launch {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.25rem;
 }

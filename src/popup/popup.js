@@ -25,11 +25,11 @@ const tabs = {
   blocked: document.getElementById('tab-blocked'),
   journal: document.getElementById('tab-journal'),
   timer: document.getElementById('tab-timer'),
-  instructions: document.getElementById('tab-instructions'),
 };
 
 const btnTheme = document.getElementById('btn-theme');
 const themeSelect = document.getElementById('theme-select');
+const btnInstructions = document.getElementById('btn-instructions');
 
 const addSiteInput = document.getElementById('add-site-input');
 const btnAddSite = document.getElementById('btn-add-site');
@@ -275,7 +275,7 @@ tabs.journal.addEventListener('click', async () => {
   await renderLog();
 });
 tabs.timer.addEventListener('click', () => showView('timer'));
-tabs.instructions.addEventListener('click', () => showView('instructions'));
+btnInstructions.addEventListener('click', () => showView('instructions'));
 
 btnAddSite.addEventListener('click', addSite);
 addSiteInput.addEventListener('keydown', (e) => {
