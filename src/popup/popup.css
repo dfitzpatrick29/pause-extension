@@ -23,7 +23,7 @@
   --font-ui:          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
-body[data-theme="cream"] {
+body[data-theme="cream"] { 
   --bg:               #f7f3ea;
   --surface:          #efe7d8;
   --surface-raised:   #e7dcc9;
@@ -156,15 +156,32 @@ body {
 .theme-select {
   position: absolute;
   right: 0;
-  top: 2rem;
+  top: calc(100% + 4px);
+  list-style: none;
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
   border-radius: var(--radius);
-  padding: 0.25rem 0.45rem;
-  min-width: 120px;
+  padding: 0.3rem 0;
+  min-width: 110px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  z-index: 100;
+}
+
+.theme-option {
+  padding: 0.45rem 0.9rem;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.theme-option:hover {
+  background: var(--surface-raised);
+}
+
+.theme-option[aria-selected="true"] {
+  font-weight: 600;
 }
 
 .tab-row {

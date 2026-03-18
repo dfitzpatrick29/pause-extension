@@ -9,6 +9,13 @@
     timer: 'pause_timer_minutes',
   };
 
+  const DEFAULT_BLOCKED_SITES = [
+    'youtube.com',
+    'instagram.com',
+    'twitter.com',
+    'facebook.com',
+  ];
+
   const hostname = window.location.hostname;
   if (!hostname) return;
 
@@ -376,7 +383,7 @@
 
   async function init() {
     const syncData = await chrome.storage.sync.get({
-      [STORAGE.blocked]: [],
+      [STORAGE.blocked]: DEFAULT_BLOCKED_SITES,
       [STORAGE.timer]: 15,
       pause_theme: 'blue',
     });

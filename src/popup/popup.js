@@ -7,6 +7,13 @@ const STORAGE = {
   theme: 'pause_theme',
 };
 
+const DEFAULT_BLOCKED_SITES = [
+  'youtube.com',
+  'instagram.com',
+  'twitter.com',
+  'facebook.com',
+];
+
 const views = {
   blocked: document.getElementById('view-blocked'),
   journal: document.getElementById('view-journal'),
@@ -83,12 +90,19 @@ function showView(id) {
 }
 
 async function loadBlockedSites() {
-  const data = await getSync({ [STORAGE.blocked]: [] });
+  const data = await getSync({ [STORAGE.blocked]: DEFAULT_BLOCKED_SITES });
   return data[STORAGE.blocked];
 }
 
 async function saveBlockedSites(arr) {
   await setSync({ [STORAGE.blocked]: arr });
+}
+
+async function ensureBlockedSitesInitialized() {
+  const data = await getSync({});
+  if (!Array.isArray(data[STORAGE.blocked])) {
+    await saveBlockedSites([...DEFAULT_BLOCKED_SITES]);
+  }
 }
 
 function escapeHtml(str) {
@@ -217,7 +231,10 @@ async function saveTimer() {
 
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
-  themeSelect.value = theme;
+  // Mark the active option in the custom dropdown
+  themeSelect.querySelectorAll('.theme-option').forEach((el) => {
+    el.setAttribute('aria-selected', el.dataset.value === theme ? 'true' : 'false');
+  });
 }
 
 async function loadTheme() {
@@ -289,11 +306,13 @@ btnTheme.addEventListener('click', () => {
   themeSelect.classList.toggle('hidden');
 });
 
-themeSelect.addEventListener('change', async () => {
-  const theme = themeSelect.value;
-  applyTheme(theme);
-  await setSync({ [STORAGE.theme]: theme });
-  themeSelect.classList.add('hidden');
+themeSelect.querySelectorAll('.theme-option').forEach((option) => {
+  option.addEventListener('click', async () => {
+    const theme = option.dataset.value;
+    applyTheme(theme);
+    await setSync({ [STORAGE.theme]: theme });
+    themeSelect.classList.add('hidden');
+  });
 });
 
 document.addEventListener('click', (e) => {
@@ -305,6 +324,7 @@ document.addEventListener('click', (e) => {
 (async function init() {
   currentSiteHostname = await getCurrentSite();
   await loadTheme();
+  await ensureBlockedSitesInitialized();
   await renderBlockedSites();
   await loadTimer();
   await syncJournalVisibility();
